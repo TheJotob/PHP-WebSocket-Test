@@ -41,12 +41,7 @@ function motion(event){
     + event.accelerationIncludingGravity.y + ", "
     + event.accelerationIncludingGravity.z;
 }
-function orientation(event){
-  document.getElementById("magnetometer").innerHTML = "Magnetometer: "
-    + event.alpha + ", "
-    + event.beta + ", "
-    + event.gamma;
-}
+
 function go(){
   if(window.DeviceMotionEvent){
     window.addEventListener("devicemotion", motion, false);
@@ -56,14 +51,7 @@ function go(){
       "is supported", "is not supported"
     );
   }
-  if(window.DeviceOrientationEvent){
-    window.addEventListener("deviceorientation", orientation, false);
-  }else{
-    var status = document.getElementById("status");
-    status.innerHTML = status.innerHTML.replace(
-      "is supported", "is not supported"
-    );
-  }
+
   init_socket();
 }
 </script>
@@ -73,7 +61,6 @@ function go(){
 <br/><br/>
 <div id="accelerometer"></div>
 <br/><br/>
-<div id="magnetometer"></div>
 <div id="socket_status"></div>
 <button id="test_send" onclick="send_message()">TEST</div>
 </body>
