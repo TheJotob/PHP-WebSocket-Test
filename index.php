@@ -4,30 +4,35 @@
 <meta charset="UTF-8"/>
 <title>Sensors</title>
 <script type="text/javascript">
+var socket;
 function init_socket() {
   try {
     socket = new WebSocket('ws://192.168.0.201:1414/socket.php');
+    console.log(socket.readyState);
 
     socket.onopen = function() {
       console.log('Socket opened');
-      socket.send('Hi there!!!');
     };
 
     socket.onclose = function(close) {
-      console.log('Socket closed' + close.code);
+      console.log(close);
     };
 
     socket.onmessage = function(msg) {
-      console.log('Neue Nachricht: ' + msg.data);
+      console.log(msg);
     };
 
     socket.onerror = function(error) {
-      console.log('error: ' + error.data);
+      console.log(error);
     }
 
   } catch(e) {
     alert("ERROR: " + e);
   }
+}
+
+function send_message() {
+  socket.send("TEST");
 }
 
 function motion(event){
@@ -70,5 +75,6 @@ function go(){
 <br/><br/>
 <div id="magnetometer"></div>
 <div id="socket_status"></div>
+<button id="test_send" onclick="send_message()">TEST</div>
 </body>
 </html>
