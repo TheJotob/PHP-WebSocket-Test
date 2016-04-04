@@ -6,7 +6,7 @@ class Socket {
   public function Socket($host, $port) {
     $this->host = $host;
     $this->port = $port;
-    //$this->init();
+    $this->init();
     $this->show();
   }
 
@@ -15,14 +15,11 @@ class Socket {
   }
 
   protected function init() {
-    $host = '192.168.0.201'; // Serverhost auf der gelauscht werden soll
-    $port = 1414; // Port auf dem Verbindungen angenommen werden sollen
-
     // Socket erstellen
     $sock = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
     // Socket an Adresse und Port binden
-    socket_bind($sock, $host, $port);
+    socket_bind($sock, $this->host, $this->port);
 
     // An Port lauschen
     socket_listen($sock);
@@ -42,6 +39,7 @@ class Socket {
         if ($s == $sock) {
           // Änderung am Serversocket
           $client = socket_accept($sock);
+          socket_sendmsg($client, "TEST", MSG_OOB);
           array_push($sockets, $client);
           print_r($sockets);
         } else {
@@ -52,3 +50,9 @@ class Socket {
     }
   }
 }
+
+// Error Reporting und Zeitlimit für Serverbetrieb setzen
+error_reporting(E_ALL);
+set_time_limit (0);
+
+$socket = new Socket('192.168.0.201', 1414);

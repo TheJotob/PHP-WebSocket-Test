@@ -1,19 +1,35 @@
-<?php
-require_once('socket.php');
-
-// Error Reporting und Zeitlimit für Serverbetrieb setzen
-error_reporting(E_ALL);
-set_time_limit (0);
-
-$socket = new Socket('192.168.0.201', '1515');
-?>
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8"/>
 <title>Sensors</title>
 <script type="text/javascript">
+function init_socket() {
+  try {
+    socket = new WebSocket('ws://192.168.0.201:1414/socket.php');
+
+    socket.onopen = function() {
+      console.log('Socket opened');
+      socket.send('Hi there!!!');
+    };
+
+    socket.onclose = function(close) {
+      console.log('Socket closed' + close.code);
+    };
+
+    socket.onmessage = function(msg) {
+      console.log('Neue Nachricht: ' + msg.data);
+    };
+
+    socket.onerror = function(error) {
+      console.log('error: ' + error.data);
+    }
+
+  } catch(e) {
+    alert("ERROR: " + e);
+  }
+}
+
 function motion(event){
   document.getElementById("accelerometer").innerHTML = "Accelerometer: "
     + event.accelerationIncludingGravity.x + ", "
@@ -43,6 +59,7 @@ function go(){
       "is supported", "is not supported"
     );
   }
+  init_socket();
 }
 </script>
 </head>
@@ -52,5 +69,6 @@ function go(){
 <div id="accelerometer"></div>
 <br/><br/>
 <div id="magnetometer"></div>
+<div id="socket_status"></div>
 </body>
 </html>
