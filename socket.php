@@ -3,7 +3,7 @@ require_once('config.php');	// including configuration
 $host = Config::HOST; 			// reading socket host from config
 $port = Config::PORT; 			// reading socket port from config
 $null = NULL; 							// setting null var
-$warning = mask("Warning");	// defining warning message
+$warning = mask("WARNING");	// defining warning message
 
 // Setup Socket to listen on defined host and port
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);

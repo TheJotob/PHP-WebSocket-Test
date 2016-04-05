@@ -6,6 +6,7 @@
   <title>Sensors</title>
   <script type="text/javascript">
     var ws = null;
+    var lastAlert = 0;
 
     /* Initialise Socket */
     function init_socket() {
@@ -13,7 +14,10 @@
         ws = new WebSocket('ws://<?= Config::HOST ?>:<?= Config::PORT ?>/socket.php');
 
         ws.onmessage = function(msg) {
-          alert(msg.data);
+          if(Date.now() - lastAlert > 5000) {
+            lastAlert = Date.now();
+            alert("Something happened to your phone!!!");
+          }
           console.log(msg.data);
         };
 
