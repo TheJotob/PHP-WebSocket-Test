@@ -49,10 +49,10 @@ while (true) {
 			/*$welcome = mb_convert_encoding("Welcome", "UTF-8");
 			$welcome = mask($welcome);*/
 			//$welcome = pack("CCC", 0x00, 'A', 0xFF);
-			$welcome = filterUnicode('A');
+			$welcome = mask("Welcome");
 
 			echo $welcome;
-			socket_send($changed_socket, $welcome, strlen($welcome), MSG_OOB);
+			socket_write($changed_socket, $welcome, strlen($welcome));
 			echo socket_strerror(socket_last_error($changed_socket));
 
 			break 2; //exit this loop

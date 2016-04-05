@@ -11,10 +11,9 @@ function init_socket() {
     console.log(ws.readyState);
 
     ws.onmessage = function(msg) {
-      alert("CALLED");
       console.log(msg.data);
     };
-    
+
     ws.onopen = function() {
       console.log('Socket opened');
       try {
