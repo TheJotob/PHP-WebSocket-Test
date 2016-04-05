@@ -1,6 +1,7 @@
 <?php
-$host = '192.168.0.201'; //host
-$port = '1414'; //port
+require_once('config.php');
+$host = Config::HOST; //host
+$port = Config::PORT; //port
 $null = NULL; //null var
 
 //Create TCP/IP sream socket
@@ -126,9 +127,4 @@ function perform_handshaking($receved_header,$client_conn, $host, $port) {
 	"WebSocket-Location: ws://$host:$port/socket.php\r\n".
 	"Sec-WebSocket-Accept:$secAccept\r\n\r\n";
 	socket_write($client_conn,$upgrade,strlen($upgrade));
-}
-
-function filterUnicode($quoted){
-	$escapable = "/[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g";
-	return preg_replace($escapable, '', $qouted);
 }

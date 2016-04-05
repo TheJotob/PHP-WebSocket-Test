@@ -1,3 +1,6 @@
+<?php
+require_once('config.php');
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,7 +10,7 @@
 var ws;
 function init_socket() {
   try {
-    ws = new WebSocket('ws://192.168.0.201:1414/socket.php');
+    ws = new WebSocket('ws://<?= Config::HOST ?>:<?= Config::PORT ?>/socket.php');
     console.log(ws.readyState);
 
     ws.onmessage = function(msg) {
