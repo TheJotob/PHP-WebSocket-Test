@@ -9,7 +9,7 @@ $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
 
 //bind socket to specified host
-socket_bind($socket, 0, $port);
+socket_bind($socket, $host, $port);
 
 //listen to port
 socket_listen($socket);
@@ -43,7 +43,17 @@ while (true) {
 		//check for any incomming data
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1) {
 			$received_text = unmask($buf); //unmask data
-			echo $received_text;
+			echo base64_encode($received_text);
+
+			//print_r($changed_socket);
+			/*$welcome = mb_convert_encoding("Welcome", "UTF-8");
+			$welcome = mask($welcome);*/
+			//$welcome = pack("CCC", 0x00, 'A', 0xFF);
+			$welcome = filterUnicode('A');
+
+			echo $welcome;
+			socket_send($changed_socket, $welcome, strlen($welcome), MSG_OOB);
+			echo socket_strerror(socket_last_error($changed_socket));
 
 			break 2; //exit this loop
 		}
@@ -66,12 +76,10 @@ function unmask($text) {
 	if($length == 126) {
 		$masks = substr($text, 4, 4);
 		$data = substr($text, 8);
-	}
-	elseif($length == 127) {
+	} elseif($length == 127) {
 		$masks = substr($text, 10, 4);
 		$data = substr($text, 14);
-	}
-	else {
+	} else {
 		$masks = substr($text, 2, 4);
 		$data = substr($text, 6);
 	}
@@ -85,6 +93,7 @@ function unmask($text) {
 //Encode message for transfer to client.
 function mask($text) {
 	$b1 = 0x80 | (0x1 & 0x0f);
+	// $b1 = 0x81;
 	$length = strlen($text);
 
 	if($length <= 125)
@@ -114,7 +123,12 @@ function perform_handshaking($receved_header,$client_conn, $host, $port) {
 	"Upgrade: websocket\r\n" .
 	"Connection: Upgrade\r\n" .
 	"WebSocket-Origin: $host\r\n" .
-	"WebSocket-Location: ws://$host:$port/demo/shout.php\r\n".
+	"WebSocket-Location: ws://$host:$port/socket.php\r\n".
 	"Sec-WebSocket-Accept:$secAccept\r\n\r\n";
 	socket_write($client_conn,$upgrade,strlen($upgrade));
+}
+
+function filterUnicode($quoted){
+	$escapable = "/[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g";
+	return preg_replace($escapable, '', $qouted);
 }

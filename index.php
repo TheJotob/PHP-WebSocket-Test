@@ -4,25 +4,33 @@
 <meta charset="UTF-8"/>
 <title>Sensors</title>
 <script type="text/javascript">
-var socket;
+var ws;
 function init_socket() {
   try {
-    socket = new WebSocket('ws://192.168.0.201:1414/socket.php');
-    console.log(socket.readyState);
+    ws = new WebSocket('ws://192.168.0.201:1414/socket.php');
+    console.log(ws.readyState);
 
-    socket.onopen = function() {
+    ws.onmessage = function(msg) {
+      alert("CALLED");
+      console.log(msg.data);
+    };
+    
+    ws.onopen = function() {
       console.log('Socket opened');
+      try {
+        ws.send("HI");
+      } catch (e) {
+        console.log(e);
+      }
+
+      console.log(ws);
     };
 
-    socket.onclose = function(close) {
+    ws.onclose = function(close) {
       console.log(close);
     };
 
-    socket.onmessage = function(msg) {
-      console.log(msg);
-    };
-
-    socket.onerror = function(error) {
+    ws.onerror = function(error) {
       console.log(error);
     }
 
@@ -32,7 +40,8 @@ function init_socket() {
 }
 
 function send_message() {
-  socket.send("TEST");
+  ws.send("TEST");
+  console.log("Send 'TEST'");
 }
 
 function motion(event){
