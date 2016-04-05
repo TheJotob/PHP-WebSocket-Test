@@ -35,7 +35,7 @@ while (true) {
 			$received_text = unmask($buf);
 			$accelerationData = parseAccelerationData($received_text);
 
-			if(thresholdExceeded($accelerationData))
+			if($accelerationData && thresholdExceeded($accelerationData))
 				socket_write($changed_socket, $warning, strlen($warning));
 
 			break 2;
