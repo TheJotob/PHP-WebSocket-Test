@@ -14,6 +14,7 @@ function init_socket() {
     console.log(ws.readyState);
 
     ws.onmessage = function(msg) {
+      alert(msg.data);
       console.log(msg.data);
     };
 
@@ -47,9 +48,12 @@ function send_message() {
 }
 
 function motion(event){
-  var str = event.accelerationIncludingGravity.x + ", "
+  /*var str = event.accelerationIncludingGravity.x + ", "
           + event.accelerationIncludingGravity.y + ", "
-          + event.accelerationIncludingGravity.z;
+          + event.accelerationIncludingGravity.z;*/
+  var str = event.acceleration.x + ", "
+          + event.acceleration.y + ", "
+          + event.acceleration.z;
   document.getElementById("accelerometer").innerHTML = "Accelerometer: " + str;
     if(ws != null)
       ws.send(str);
