@@ -1,10 +1,13 @@
 <?php
+class SocketHelper {
+  public static $clients = array();
+  public static $thresholds = array();
  /**
 	* Decode message from client
 	* @param String $text Text to unmask
   * @return String unmasked text
 	*/
-function unmask($text) {
+public static function unmask($text) {
 	$length = ord($text[1]) & 127;
 	if($length == 126) {
 		$masks = substr($text, 4, 4);
@@ -28,7 +31,7 @@ function unmask($text) {
 	* @param String $text Text to mask
   * @return String masked text
 	*/
-function mask($text) {
+public static function mask($text) {
 	$b1 = 0x80 | (0x1 & 0x0f);
 	// $b1 = 0x81;
 	$length = strlen($text);
@@ -50,7 +53,7 @@ function mask($text) {
 	* @param Integer $port Port of socket
   * @return float[] or false
 	*/
-function perform_handshaking($received_header,$client_conn, $host, $port) {
+public static function perform_handshaking($received_header,$client_conn, $host, $port) {
 	$headers = array();
 	$lines = preg_split("/\r\n/", $received_header);
 	foreach($lines as $line) {
@@ -70,4 +73,5 @@ function perform_handshaking($received_header,$client_conn, $host, $port) {
 	"WebSocket-Location: ws://$host:$port/socket.php\r\n".
 	"Sec-WebSocket-Accept:$secAccept\r\n\r\n";
 	socket_write($client_conn,$upgrade,strlen($upgrade));
+}
 }

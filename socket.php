@@ -2,19 +2,18 @@
 require_once('config.php');	// including configuration
 require_once('socket_helper.php');
 $null = NULL; 							// setting null var
-$warning = mask("WARNING");	// defining warning message
-$thresholds = array();
+$warning = SocketHelper::mask("WARNING");	// defining warning message
 
 // Setup Socket to listen on defined host and port
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
 socket_bind($socket, Config::HOST, Config::PORT);
 socket_listen($socket);
-$clients = array($socket);
+SocketHelper::$clients = array($socket);
 
 while (true) {
 	// clone connection array for use in socket_select
-	$changed = $clients;
+	$changed = SocketHelper::$clients;
 
 	// get sockets that changed
 	socket_select($changed, $null, $null, 0, 10);
@@ -22,9 +21,9 @@ while (true) {
 	if (in_array($socket, $changed)) {
 		// Accept new sockets and perform handshake
 		$socket_new = socket_accept($socket);
-		$clients[] = $socket_new;
+		SocketHelper::$clients[] = $socket_new;
 		$header = socket_read($socket_new, 1024);
-		perform_handshaking($header, $socket_new, Config::HOST, Config::PORT);
+		SocketHelper::perform_handshaking($header, $socket_new, Config::HOST, Config::PORT);
 		$found_socket = array_search($socket, $changed);
 		unset($changed[$found_socket]);
 	}
@@ -32,10 +31,15 @@ while (true) {
 	foreach ($changed as $changed_socket) {
 		// Check for any incoming data
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1) {
-			$received_text = unmask($buf);
+			$received_text = SocketHelper::unmask($buf);
+			if(substr($received_text, 0, 1) == 'T') {
+				setThreshold($changed_socket, intval(substr($received_text, 1)));
+				break 2;
+			}
+
 			$accelerationData = parseAccelerationData($received_text);
 
-			if($accelerationData && thresholdExceeded($accelerationData))
+			if($accelerationData && thresholdExceeded($changed_socket, $accelerationData))
 				socket_write($changed_socket, $warning, strlen($warning));
 
 			break 2;
@@ -44,8 +48,8 @@ while (true) {
 		// Cleanup disconnected clients
 		$buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
 		if ($buf === false) {
-			$found_socket = array_search($changed_socket, $clients);
-			unset($clients[$found_socket]);
+			$found_socket = array_search($changed_socket, SocketHelper::$clients);
+			unset(SocketHelper::$clients[$found_socket]);
 		}
 	}
 }
@@ -78,12 +82,27 @@ function parseAccelerationData($str) {
 	* @param float[] $data
   * @return boolean
 	*/
-function thresholdExceeded($data) {
+function thresholdExceeded($client, $data) {
 	for($i = 0; $i < count($data); $i++) {
 		// check if the acceleration is higher or lower than the threshold
-		if($data[$i] > Config::THRESHOLD || $data[$i] < (Config::THRESHOLD * -1)) {
+		if($data[$i] > getThreshold($client) || $data[$i] < (getThreshold($client) * -1)) {
 			echo "Warning: " . $data[$i] . "\n";
 			return true;
 		}
+	}
+}
+
+function setThreshold($client, $threshold) {
+	$index = array_search($client, SocketHelper::$clients);
+	SocketHelper::$thresholds[$index] = $threshold;
+	// echo "Treshold for " . $index . " is: " . $threshold;
+}
+
+function getThreshold($client) {
+	$index = array_search($client, SocketHelper::$clients);
+	if(isset(SocketHelper::$thresholds[$index]))
+		return SocketHelper::$thresholds[$index];
+	else {
+		return Config::THRESHOLD;
 	}
 }
