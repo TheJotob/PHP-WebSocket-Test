@@ -7,7 +7,7 @@ require_once('config.php');
 <meta charset="UTF-8"/>
 <title>Sensors</title>
 <script type="text/javascript">
-var ws;
+var ws = null;
 function init_socket() {
   try {
     ws = new WebSocket('ws://<?= Config::HOST ?>:<?= Config::PORT ?>/socket.php');
@@ -47,10 +47,12 @@ function send_message() {
 }
 
 function motion(event){
-  document.getElementById("accelerometer").innerHTML = "Accelerometer: "
-    + event.accelerationIncludingGravity.x + ", "
-    + event.accelerationIncludingGravity.y + ", "
-    + event.accelerationIncludingGravity.z;
+  var str = event.accelerationIncludingGravity.x + ", "
+          + event.accelerationIncludingGravity.y + ", "
+          + event.accelerationIncludingGravity.z;
+  document.getElementById("accelerometer").innerHTML = "Accelerometer: " + str;
+    if(ws != null)
+      ws.send(str);
 }
 
 function go(){
