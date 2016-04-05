@@ -37,3 +37,7 @@ function alertUser() {
 function sendThreshold(threshold) {
   ws.send("T" + threshold);
 }
+
+function updateThreshold() {
+  sendThreshold(document.getElementById('threshold').value);
+}

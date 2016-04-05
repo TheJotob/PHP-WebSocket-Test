@@ -6,7 +6,9 @@ function motion(event){
             + event.acceleration.z;
 
     // Display acceleration data
-    document.getElementById("accelerometer").innerHTML = "Accelerometer: " + str;
+    document.getElementById("accelerationX").innerHTML = event.acceleration.x;
+    document.getElementById("accelerationY").innerHTML = event.acceleration.y;
+    document.getElementById("accelerationZ").innerHTML = event.acceleration.z;
 
     // Send acceleration data to socket
     if(ws != null)
