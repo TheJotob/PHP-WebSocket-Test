@@ -3,6 +3,7 @@ require_once('config.php');
 $host = Config::HOST; //host
 $port = Config::PORT; //port
 $null = NULL; //null var
+$warning = mask("Warning");
 
 //Create TCP/IP sream socket
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -44,17 +45,10 @@ while (true) {
 		//check for any incomming data
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1) {
 			$received_text = unmask($buf); //unmask data
-			echo base64_encode($received_text);
 
-			//print_r($changed_socket);
-			/*$welcome = mb_convert_encoding("Welcome", "UTF-8");
-			$welcome = mask($welcome);*/
-			//$welcome = pack("CCC", 0x00, 'A', 0xFF);
-			$welcome = mask("Welcome");
-
-			echo $welcome;
-			socket_write($changed_socket, $welcome, strlen($welcome));
-			echo socket_strerror(socket_last_error($changed_socket));
+			$accelerationData = parseAccelerationData($received_text);
+			if(thresholdExceeded($accelerationData))
+				socket_write($changed_socket, $warning, strlen($warning));
 
 			break 2; //exit this loop
 		}
@@ -127,4 +121,29 @@ function perform_handshaking($receved_header,$client_conn, $host, $port) {
 	"WebSocket-Location: ws://$host:$port/socket.php\r\n".
 	"Sec-WebSocket-Accept:$secAccept\r\n\r\n";
 	socket_write($client_conn,$upgrade,strlen($upgrade));
+}
+
+function parseAccelerationData($str) {
+	$accelerationData = explode(", ", $str);
+
+	if(count($accelerationData) != 3)
+		return;
+
+	for($i = 0; $i < 3; $i++) {
+		if(is_float(floatval($accelerationData[$i])))
+			$accelerationData[$i] = floatval($accelerationData[$i]);
+		else return;
+	}
+
+	//echo implode("|", $accelerationData) . "\n";
+	return $accelerationData;
+}
+
+function thresholdExceeded($data) {
+	for($i = 0; $i < 3; $i++) {
+		if($data[$i] > Config::THRESHOLD || $data[$i] < (Config::THRESHOLD * -1)) {
+			echo "Warning: " . $data[$i];
+			return true;
+		}
+	}
 }
