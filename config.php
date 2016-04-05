@@ -1,6 +1,6 @@
 <?php
 class Config {
-  const HOST = 'localhost';
-  const PORT = 1414;
-  const THRESHOLD = 3;
+  const HOST = '192.168.0.201'; // host address for the socket
+  const PORT = 1414;            // port for the socket
+  const THRESHOLD = 6;          // every acceleration above this value is generating a warning
 }

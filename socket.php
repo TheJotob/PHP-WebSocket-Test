@@ -1,71 +1,61 @@
 <?php
-require_once('config.php');
-$host = Config::HOST; //host
-$port = Config::PORT; //port
-$null = NULL; //null var
-$warning = mask("Warning");
+require_once('config.php');	// including configuration
+$host = Config::HOST; 			// reading socket host from config
+$port = Config::PORT; 			// reading socket port from config
+$null = NULL; 							// setting null var
+$warning = mask("Warning");	// defining warning message
 
-//Create TCP/IP sream socket
+// Setup Socket to listen on defined host and port
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-//reuseable port
 socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
-
-//bind socket to specified host
 socket_bind($socket, $host, $port);
-
-//listen to port
 socket_listen($socket);
-
-//create & add listning socket to the list
 $clients = array($socket);
 
-//start endless loop, so that our script doesn't stop
 while (true) {
-	//manage multipal connections
+	// clone connection array for use in socket_select
 	$changed = $clients;
-	//returns the socket resources in $changed array
+
+	// get sockets that changed
 	socket_select($changed, $null, $null, 0, 10);
 
-	//check for new socket
 	if (in_array($socket, $changed)) {
-		$socket_new = socket_accept($socket); //accpet new socket
-		$clients[] = $socket_new; //add socket to client array
-
-		$header = socket_read($socket_new, 1024); //read data sent by the socket
-		perform_handshaking($header, $socket_new, $host, $port); //perform websocket handshake
-
-		//make room for new socket
+		// Accept new sockets and perform handshake
+		$socket_new = socket_accept($socket);
+		$clients[] = $socket_new;
+		$header = socket_read($socket_new, 1024);
+		perform_handshaking($header, $socket_new, $host, $port);
 		$found_socket = array_search($socket, $changed);
 		unset($changed[$found_socket]);
 	}
 
-	//loop through all connected sockets
 	foreach ($changed as $changed_socket) {
-
-		//check for any incomming data
+		// Check for any incoming data
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1) {
-			$received_text = unmask($buf); //unmask data
-
+			$received_text = unmask($buf);
 			$accelerationData = parseAccelerationData($received_text);
+
 			if(thresholdExceeded($accelerationData))
 				socket_write($changed_socket, $warning, strlen($warning));
 
-			break 2; //exit this loop
+			break 2;
 		}
 
+		// Cleanup disconnected clients
 		$buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
-		if ($buf === false) { // check disconnected client
-			// remove client for $clients array
+		if ($buf === false) {
 			$found_socket = array_search($changed_socket, $clients);
-			socket_getpeername($changed_socket, $ip);
 			unset($clients[$found_socket]);
 		}
 	}
 }
-// close the listening socket
 socket_close($socket);
 
-//Unmask incoming framed message
+/**
+	* Decode message from client
+	* @param String $text Text to unmask
+  * @return String unmasked text
+	*/
 function unmask($text) {
 	$length = ord($text[1]) & 127;
 	if($length == 126) {
@@ -85,7 +75,11 @@ function unmask($text) {
 	return $text;
 }
 
-//Encode message for transfer to client.
+/**
+	* Encode message for transfer to client
+	* @param String $text Text to mask
+  * @return String masked text
+	*/
 function mask($text) {
 	$b1 = 0x80 | (0x1 & 0x0f);
 	// $b1 = 0x81;
@@ -100,10 +94,17 @@ function mask($text) {
 	return $header.$text;
 }
 
-//handshake new client.
-function perform_handshaking($receved_header,$client_conn, $host, $port) {
+/**
+	* Handshake new client
+	* @param String $received_header Header received from client
+	* @param resource $client_conn Connection to client
+	* @param String $host Host address of socket
+	* @param Integer $port Port of socket
+  * @return float[] or false
+	*/
+function perform_handshaking($received_header,$client_conn, $host, $port) {
 	$headers = array();
-	$lines = preg_split("/\r\n/", $receved_header);
+	$lines = preg_split("/\r\n/", $received_header);
 	foreach($lines as $line) {
 		$line = chop($line);
 		if(preg_match('/\A(\S+): (.*)\z/', $line, $matches)) {
@@ -123,26 +124,38 @@ function perform_handshaking($receved_header,$client_conn, $host, $port) {
 	socket_write($client_conn,$upgrade,strlen($upgrade));
 }
 
+/**
+	* Parse the acceleration data.
+	* @param String $str format: "xAcceleration, yAcceleration, zAcceleration"
+  * @return float[] or false
+	*/
 function parseAccelerationData($str) {
 	$accelerationData = explode(", ", $str);
 
+	// check if the array has the right amount of values (should be 3 because of x, y, z)
 	if(count($accelerationData) != 3)
-		return;
+		return false;
 
+	// check if all values are containing floats
 	for($i = 0; $i < 3; $i++) {
 		if(is_float(floatval($accelerationData[$i])))
 			$accelerationData[$i] = floatval($accelerationData[$i]);
-		else return;
+		else return false;
 	}
 
-	//echo implode("|", $accelerationData) . "\n";
 	return $accelerationData;
 }
 
+/**
+	* Check if the threshold is exceeded
+	* @param float[] $data
+  * @return boolean
+	*/
 function thresholdExceeded($data) {
-	for($i = 0; $i < 3; $i++) {
+	for($i = 0; $i < count($data); $i++) {
+		// check if the acceleration is higher or lower than the threshold
 		if($data[$i] > Config::THRESHOLD || $data[$i] < (Config::THRESHOLD * -1)) {
-			echo "Warning: " . $data[$i];
+			echo "Warning: " . $data[$i] . "\n";
 			return true;
 		}
 	}
