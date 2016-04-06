@@ -10,14 +10,10 @@
   var port = '<?= Config::PORT ?>';
   /* Kick off function */
   function go() {
-    if(window.DeviceMotionEvent) {
+    if(window.DeviceMotionEvent)
       window.addEventListener("devicemotion", motion, false);
-    } else {
-      var status = document.getElementById("status");
-      status.innerHTML = status.innerHTML.replace(
-        "is supported", "is not supported"
-      );
-    }
+    else
+      alert("Your device is not supporting DeviceMotionEvent :(")
 
     init_socket();
   }

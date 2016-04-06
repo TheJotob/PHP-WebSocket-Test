@@ -6,19 +6,8 @@ function init_socket() {
   try {
     ws = new WebSocket('ws://' + host + ':' + port + '/socket.php');
 
-    ws.onmessage = function(msg) {
-      alertUser();
-      console.log(msg.data);
-    };
-
-    /* Configure socket */
-    ws.onopen = function() {
-      sendThreshold(6);
-      console.log('Socket opened');
-    };
-
-    ws.onclose  = function(close) { console.log(close); };
-    ws.onerror  = function(error) { console.log(error); };
+    ws.onmessage = function(msg) { alertUser(); };
+    ws.onerror  = function(error) { alert("Something went wrong please reload the page!") };
 
   } catch(e) {
     alert("ERROR: " + e);
@@ -38,6 +27,7 @@ function sendThreshold(threshold) {
   ws.send("T" + threshold);
 }
 
+/* Read the new threshold value and send it to server */
 function updateThreshold() {
   sendThreshold(document.getElementById('threshold').value);
 }
