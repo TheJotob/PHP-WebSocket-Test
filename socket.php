@@ -1,6 +1,7 @@
 <?php
 require_once('config.php');	// including configuration
 require_once('socket_helper.php');
+require_once('motion_helper.php');
 $null = NULL; 							// setting null var
 $warning = SocketHelper::mask("WARNING");	// defining warning message
 
@@ -33,13 +34,13 @@ while (true) {
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1) {
 			$received_text = SocketHelper::unmask($buf);
 			if(substr($received_text, 0, 1) == 'T') {
-				setThreshold($changed_socket, intval(substr($received_text, 1)));
+				MotionHelper::setThreshold($changed_socket, intval(substr($received_text, 1)));
 				break 2;
 			}
 
-			$accelerationData = parseAccelerationData($received_text);
+			$accelerationData = MotionHelper::parseAccelerationData($received_text);
 
-			if($accelerationData && thresholdExceeded($changed_socket, $accelerationData))
+			if($accelerationData && MotionHelper::thresholdExceeded($changed_socket, $accelerationData))
 				socket_write($changed_socket, $warning, strlen($warning));
 
 			break 2;
@@ -54,55 +55,3 @@ while (true) {
 	}
 }
 socket_close($socket);
-
-/**
-	* Parse the acceleration data.
-	* @param String $str format: "xAcceleration, yAcceleration, zAcceleration"
-  * @return float[] or false
-	*/
-function parseAccelerationData($str) {
-	$accelerationData = explode(", ", $str);
-
-	// check if the array has the right amount of values (should be 3 because of x, y, z)
-	if(count($accelerationData) != 3)
-		return false;
-
-	// check if all values are containing floats
-	for($i = 0; $i < 3; $i++) {
-		if(is_float(floatval($accelerationData[$i])))
-			$accelerationData[$i] = floatval($accelerationData[$i]);
-		else return false;
-	}
-
-	return $accelerationData;
-}
-
-/**
-	* Check if the threshold is exceeded
-	* @param float[] $data
-  * @return boolean
-	*/
-function thresholdExceeded($client, $data) {
-	for($i = 0; $i < count($data); $i++) {
-		// check if the acceleration is higher or lower than the threshold
-		if($data[$i] > getThreshold($client) || $data[$i] < (getThreshold($client) * -1)) {
-			echo "Warning: " . $data[$i] . "\n";
-			return true;
-		}
-	}
-}
-
-function setThreshold($client, $threshold) {
-	$index = array_search($client, SocketHelper::$clients);
-	SocketHelper::$thresholds[$index] = $threshold;
-	// echo "Treshold for " . $index . " is: " . $threshold;
-}
-
-function getThreshold($client) {
-	$index = array_search($client, SocketHelper::$clients);
-	if(isset(SocketHelper::$thresholds[$index]))
-		return SocketHelper::$thresholds[$index];
-	else {
-		return Config::THRESHOLD;
-	}
-}

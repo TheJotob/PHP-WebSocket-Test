@@ -1,7 +1,6 @@
 <?php
 class SocketHelper {
   public static $clients = array();
-  public static $thresholds = array();
  /**
 	* Decode message from client
 	* @param String $text Text to unmask
